@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static edu.uoc.practica.bd.util.DBAccessor.logger;
-
 
 public class Exercise1PrintReportOverQuery {
 
@@ -45,12 +43,10 @@ public class Exercise1PrintReportOverQuery {
         // Check if view exists
         try(ResultSet rs = conn.getMetaData().getTables(null, "ubd_20241", myView, null)) {
           if (!rs.next()) {
-            logger.error("ERROR: The view " + myView + " does not exist");
             System.out.println("ERROR: The view " + myView + " does not exist");
             return;
           }
         }
-
 
         // TODO Execute SQL sentence
         // Create a Statement
@@ -80,19 +76,16 @@ public class Exercise1PrintReportOverQuery {
         }
         // TODO End loop
        if (list.isEmpty()) {
-          logger.error("ERROR: The view " + myView + " is empty");
           System.out.println("ERROR: The view " + myView + " is empty");
           return;
         }
         report.printReport(list);
       } catch(SQLClientInfoException e){
         String messageErr = "ERROR: SQLClientInfoException";
-        logger.error(messageErr, e);
         System.err.println(messageErr);
         e.printStackTrace(System.err);
       } catch (SQLException e) {
         String messageErr = "ERROR: SQL Exception";
-        logger.error(messageErr, e);
         System.err.println(messageErr);
         e.printStackTrace(System.err);
       }
@@ -110,7 +103,6 @@ public class Exercise1PrintReportOverQuery {
           }
         } catch (SQLException e) {
           String messageErr = "ERROR: Closing resources";
-          logger.error(messageErr, e);
           System.err.println(messageErr);
           e.printStackTrace(System.err);
         }

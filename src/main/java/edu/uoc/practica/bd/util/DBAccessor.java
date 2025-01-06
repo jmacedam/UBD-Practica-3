@@ -8,13 +8,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 
 public class DBAccessor {
-
-  public static final Logger logger = LoggerFactory.getLogger(DBAccessor.class);
 
   private String dbname;
   private String host;
@@ -73,13 +70,11 @@ public class DBAccessor {
       }
     } catch (ClassNotFoundException e) {
       String messageErr = "PostgreSQL JDBC Driver not found.";
-      logger.error(messageErr, e);
       System.err.println(messageErr);
       e.printStackTrace(System.err);
       throw new RuntimeException(messageErr, e);
     } catch (SQLException e) {
       String messageErr = "Connection Failed!: could not connect to the database.";
-      logger.error(messageErr, e);
         System.err.println(messageErr);
         e.printStackTrace(System.err);
     }
