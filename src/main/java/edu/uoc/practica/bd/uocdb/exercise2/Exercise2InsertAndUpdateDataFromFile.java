@@ -4,11 +4,7 @@ import edu.uoc.practica.bd.util.DBAccessor;
 import edu.uoc.practica.bd.util.FileUtilities;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.List;
 
 public class Exercise2InsertAndUpdateDataFromFile {
@@ -28,39 +24,212 @@ public class Exercise2InsertAndUpdateDataFromFile {
   private void run() {
     List<List<String>> fileContents = null;
 
+    //Reading block of the file containing the data located in the resources folder
     try {
+        //Reading the file using the FileUtilities method readFileFromClasspath
       fileContents = fileUtilities.readFileFromClasspath("exercise2.data");
-    } catch (FileNotFoundException e) {
+    } catch (FileNotFoundException e) { //If the file is not found or does not exist
       System.err.println("ERROR: File not found");
       e.printStackTrace();
-    } catch (IOException e) {
+    } catch (IOException e) { //If there is an I/O error
       System.err.println("ERROR: I/O error");
       e.printStackTrace();
     }
 
-		if (fileContents == null) {
+		if (fileContents == null) { //If the file is empty, it exits the method
 			return;
 		}
 
+    // Block where the connection to the exercise database is initialized.
+    // It is saved in the conn instance of Connection
     DBAccessor dbaccessor = new DBAccessor();
     dbaccessor.init();
     Connection conn = dbaccessor.getConnection();
 
-	if (conn == null) {
+	if (conn == null) {  //If the connection is null, it exits the method
 		return;
 	}
 
-
-	// TODO Prepare everything before updating or inserting
-
-    try {    	
-      // TODO Update or insert the wine, winery and zone from every row in file
-    	
-      // TODO Validate transaction
+    // Start transaction
+    // Set autocommit to false
+    try {
+      conn.setAutoCommit(false);
+    } catch (SQLException e) { //If there is an error setting autocommit to false
+      System.err.println("ERROR: Could not set autocommit to false");
+      e.printStackTrace();
     }
-    // TODO Close resources and check exceptions
-    finally {
+
+    // TODO Prepare everything before updating or inserting
+    // Prepared Statements and SQL sentences are initialized
+    PreparedStatement selectZoneStatement = null;
+    PreparedStatement insertZoneStatement = null;
+    PreparedStatement updateWineryStatement = null;
+    PreparedStatement insertWineryStatement = null;
+    PreparedStatement insertWineStatement = null;
+    ResultSet rs = null; //ResultSet to store the result of the query
+
+
+
+    try {
+
+        // SQL sentences: SQL statements associated with each of the prepared statements
+        String selectZoneSQL = "SELECT zone_id FROM ZONE WHERE zone_id = ?";
+        String insertZoneSQL = "INSERT INTO zone (zone_id, zone_name, capital_town, climate, region) VALUES (?, ?, ?, ?, ?)";
+        String updateWinerySQL = "UPDATE winery SET winery_phone = ?, sales_representative = ? WHERE winery_id = ?";
+        String insertWinerySQL = "INSERT INTO winery (winery_id, winery_name, town, established_year, winery_phone, sales_representative) VALUES (?, ?, ?, ?, ?, ?)";
+        String insertWineSQL = "INSERT INTO wine (wine_name, vintage, alcohol_content, category, color, winery_id, zone_id, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)";
+
+        //Prepared Statements inicialization
+        //The prepared statements are initialized with the SQL sentences
+        //The prepared statements are initialized with the connection conn
+        selectZoneStatement = conn.prepareStatement(selectZoneSQL);
+        insertZoneStatement = conn.prepareStatement(insertZoneSQL);
+        updateWineryStatement = conn.prepareStatement(updateWinerySQL);
+        insertWineryStatement = conn.prepareStatement(insertWinerySQL);
+        //The prepared statement instance is configured to return the generated key wine_id
+        insertWineStatement = conn.prepareStatement(insertWineSQL, Statement.RETURN_GENERATED_KEYS);
+
+
+
+      // The data is inserted or updated in the database
+      // as appropriate.
+    	for(List<String> row : fileContents) {
+
+            //Update or insert winery
+            updateWineryStatement.clearParameters();
+            setPSUpdateWinery(updateWineryStatement, row);
+            int updatedRows = updateWineryStatement.executeUpdate();
+            if (updatedRows == 0) {
+                System.out.println("Winery not found, inserting winery");
+                insertWineryStatement.clearParameters();
+                setPSInsertWinery(insertWineryStatement, row);
+                insertWineryStatement.executeUpdate();
+            } else {
+                System.out.println("Winery updated");
+            }
+
+            //If zone does not exists, insert zone
+            selectZoneStatement.clearParameters();
+            setPSSelectZone(selectZoneStatement, row);
+            rs = selectZoneStatement.executeQuery();
+            if (!rs.next()) {
+                System.out.println("Zone not found, inserting zone");
+                insertZoneStatement.clearParameters();
+                setPSInsertZone(insertZoneStatement, row);
+                insertZoneStatement.executeUpdate();
+            } else {
+                System.out.println("Zone found");
+            }
+
+            //Insert wine
+
+            insertWineStatement.clearParameters();
+            setPSInsertWine(insertWineStatement, row);
+            insertWineStatement.setInt(9,0);
+            //Display via standard output the value of wine_id assigned by the database
+            int insertRow = insertWineStatement.executeUpdate();
+            if (insertRow > 0){
+                try (ResultSet rsWine = insertWineStatement.getGeneratedKeys()) {
+                    if (rsWine.next()) {
+                        System.out.println("Wine inserted with id: " + rsWine.getInt(1));
+                    }
+                }
+            } else {
+                System.out.println("Wine not inserted");
+            }
+
+
+        }
+      // Validate transaction
+
+        conn.commit();
+    }
+
+    catch (SQLException e) {
+      System.err.println("ERROR: Could not update or insert data (ZONE, WINERY, WINE)");
+      System.err.println(e.getMessage());
+
+      try {
+          System.err.println("Rolling back transaction");
+          conn.rollback();
+      } catch (SQLException e1) { //If there is an error rolling back the transaction
+        //Parameters causing the error are printed
+        System.err.println("ERROR: Could not rollback transaction");
+        System.out.println("Message: " + e1.getMessage());
+        System.out.println("SQLState: " + e1.getSQLState());
+        System.out.println("ErrorCode: " + e1.getErrorCode());
+
       }
+    }
+    // Close resources and check exceptions
+    // Close the prepared statements, the result set, the connection and set autocommit to true
+    // If there is an error closing the resources, the error is printed
+    finally {
+
+            if (selectZoneStatement != null) {
+                try {
+                    selectZoneStatement.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close selectZoneStatement");
+                    System.err.println(e.getMessage());
+                }
+            }
+            if (insertZoneStatement != null) {
+                try {
+                    insertZoneStatement.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close insertZoneStatement");
+                    System.err.println(e.getMessage());
+                }
+            }
+            if (updateWineryStatement != null) {
+                try {
+                    updateWineryStatement.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close updateWineryStatement");
+                    System.err.println(e.getMessage());
+                }
+            }
+            if (insertWineryStatement != null) {
+                try {
+                    insertWineryStatement.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close insertWineryStatement");
+                    System.err.println(e.getMessage());
+                }
+            }
+            if (insertWineStatement != null) {
+                try {
+                    insertWineStatement.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close insertWineStatement");
+                    System.err.println(e.getMessage());
+                }
+            }
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close ResultSet");
+                    System.err.println(e.getMessage());
+                }
+            }
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                System.err.println("ERROR: Could not set autocommit to true");
+                System.err.println(e.getMessage());
+            }
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    System.err.println("ERROR: Could not close connection");
+                    System.err.println(e.getMessage());
+                }
+            }
+    }
+
   }
 
   

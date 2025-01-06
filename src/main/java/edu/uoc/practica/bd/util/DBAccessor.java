@@ -8,7 +8,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public class DBAccessor {
+
+  public static final Logger logger = LoggerFactory.getLogger(DBAccessor.class);
 
   private String dbname;
   private String host;
@@ -52,9 +58,33 @@ public class DBAccessor {
     Connection conn = null;
 
     // TODO Implement the DB connection
+    try {
+      //Registrar el driver con class.forName
+      Class.forName("org.postgresql.Driver");
+      //Establecer la conexión
+      conn = DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbname, user, passwd);
 
-    // TODO Sets the search_path
+      // TODO Sets the search_path
+      //Configurar el esquema y el search_path
+      if (this.schema != null && !this.schema.isEmpty()) {
+        try (Statement stmt = conn.createStatement()) {
+          stmt.execute("SET search_path TO " + this.schema);
+        }
+      }
+    } catch (ClassNotFoundException e) {
+      String messageErr = "PostgreSQL JDBC Driver not found.";
+      logger.error(messageErr, e);
+      System.err.println(messageErr);
+      e.printStackTrace(System.err);
+      throw new RuntimeException(messageErr, e);
+    } catch (SQLException e) {
+      String messageErr = "Connection Failed!: could not connect to the database.";
+      logger.error(messageErr, e);
+        System.err.println(messageErr);
+        e.printStackTrace(System.err);
+    }
 
+    //Return the instance of the connection
     return conn;
 
   }

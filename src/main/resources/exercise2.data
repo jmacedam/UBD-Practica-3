@@ -1,4 +1,4 @@
-# wine_name, vintage, alcohol_content, category, color, price, winery_id, winery_name, town, established_year, winery_phone, sales_representative,zone_id, zone_name,capital_town,climate,region
-Perro Verde, 2021, 12, young, white, 15, 41, Txomin Etxaniz, Bilbao, 1912, 444-228-3323, Patxi Lopez , 41, Getariako Txakolina, Bilbao, Oceanic, Euskadi Spain
-
-
+#wine_name,vintage,alcohol_content,category,color,price,winery_id,winery_name,town,established_year,winery_phone,sales_representative,zone_id,zone_name,capital_town,climate, region
+Cava Juve & Camps Reserva de la Familia, 2020, 10.5, reserve, white, 82, 40 , Juve & Camps, Penedès, 1898, 587-837-3933, Ramon Garcia , 32, Cava, Penedès, Continental, Catalunya Spain
+Viña Tondonia, 2010, 13.5, reserve, red, 38, 2, Marqués de Riscal, La Rioja, 1858, 932-938-3827, Felipe Nuevo , 12, La Rioja, Logroño, Continental, La Rioja Spain
+Txomin Etxaniz, 2021, 11, young, white, 15, 41, Txomin Etxaniz, Bilbao, 1912, 444-228-3323, Patxi Lopez , 41, Getariako Txakolina, Bilbao, Oceanic, Euskadi Spain
